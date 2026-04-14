@@ -266,11 +266,6 @@ def install_db(prepared_db: str):
         print("Is AdGuard for Safari installed?", file=sys.stderr)
         sys.exit(1)
 
-    if os.path.exists(AG_MINI_DB_PATH):
-        backup = AG_MINI_DB_PATH + f".bak.{int(time.time())}"
-        shutil.copy2(AG_MINI_DB_PATH, backup)
-        print(f"Backed up existing DB -> {backup}")
-
     shutil.copy2(prepared_db, AG_MINI_DB_PATH)
     print(f"Installed: {prepared_db} -> {AG_MINI_DB_PATH}")
 
