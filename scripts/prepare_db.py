@@ -25,6 +25,11 @@ import time
 from datetime import datetime, timezone
 
 FILTER_ID = 2
+AG_MINI_DB_DIR = os.path.expanduser(
+    "~/Library/Group Containers/TC3Q7MAJXF.com.adguard.mac/"
+    "Library/Application Support/com.adguard.safari.AdGuard/Filters"
+)
+AG_MINI_DB_PATH = os.path.join(AG_MINI_DB_DIR, "agflm_standard.db")
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/alexx7311/adguard-filters-test/main"
 DOWNLOAD_URL = f"{GITHUB_RAW_BASE}/extension/safari/filters/2_optimized.txt"
 FIRST_PATCH_RELATIVE = "../patches/2_optimized/2_optimized-s-1700003600-3600.patch"
@@ -70,9 +75,9 @@ def read_base_filter() -> str:
         sys.exit(1)
     with open(path, "r") as f:
         content = f.read()
-    # Remove trailing newline (FLM stores content without trailing newline)
-    if content.endswith("\n"):
-        content = content[:-1]
+    # FLM stores rules_text WITH trailing newline (as downloaded from web)
+    if not content.endswith("\n"):
+        content += "\n"
     return content
 
 
@@ -96,7 +101,6 @@ def prepare_tc10090(source_db: str):
     output_dir = os.path.join(os.getcwd(), "prepared_dbs")
     os.makedirs(output_dir, exist_ok=True)
     output_db = os.path.join(output_dir, "agflm_tc10090.db")
-    backup_db = os.path.join(output_dir, f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
 
     # Copy source DB
     shutil.copy2(source_db, output_db)
@@ -111,7 +115,7 @@ def prepare_tc10090(source_db: str):
                 checksum = ?,
                 last_download_time = ?,
                 is_installed = 1,
-                is_enabled = 1,
+                is_enabled = 0,
                 download_url = ?,
                 subscription_url = ?
             WHERE filter_id = ?
@@ -163,10 +167,7 @@ def prepare_tc10090(source_db: str):
     finally:
         conn.close()
 
-    # Create backup
-    shutil.copy2(output_db, backup_db)
-    print(f"Backup: {backup_db}")
-    return output_db, backup_db
+    return output_db
 
 
 def prepare_tc10091(source_db: str):
@@ -250,24 +251,37 @@ def prepare_tc10277(source_db: str):
     return output_db
 
 
+def install_db(prepared_db: str):
+    """Copy prepared DB to AG Mini app path."""
+    os.makedirs(AG_MINI_DB_DIR, exist_ok=True)
+    shutil.copy2(prepared_db, AG_MINI_DB_PATH)
+    print(f"\nInstalled: {prepared_db} -> {AG_MINI_DB_PATH}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Prepare AG Mini DB for filter update tests")
     parser.add_argument("tc", choices=["tc10090", "tc10091", "tc10277"],
                         help="Test case to prepare for")
-    parser.add_argument("--source", required=True,
-                        help="Path to source DB (original for tc10090, backup for tc10091/tc10277)")
+    parser.add_argument("--source",
+                        help=f"Path to source DB (default: AG Mini path)")
+    parser.add_argument("--install", action="store_true",
+                        help="Copy prepared DB to AG Mini app path")
     args = parser.parse_args()
 
-    if not os.path.exists(args.source):
-        print(f"Error: source DB not found: {args.source}", file=sys.stderr)
+    source = args.source or AG_MINI_DB_PATH
+    if not os.path.exists(source):
+        print(f"Error: source DB not found: {source}", file=sys.stderr)
         sys.exit(1)
 
     if args.tc == "tc10090":
-        prepare_tc10090(args.source)
+        output_db = prepare_tc10090(source)
     elif args.tc == "tc10091":
-        prepare_tc10091(args.source)
+        output_db = prepare_tc10091(source)
     elif args.tc == "tc10277":
-        prepare_tc10277(args.source)
+        output_db = prepare_tc10277(source)
+
+    if args.install:
+        install_db(output_db)
 
 
 if __name__ == "__main__":
