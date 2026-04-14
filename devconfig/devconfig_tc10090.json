@@ -1,0 +1,5 @@
+{
+    "filters_timer_check_period": 25.0,
+    "filters_diff_update_period": 60.0,
+    "filters_meta_url": "https://raw.githubusercontent.com/alexx7311/adguard-filters-test/main/extension/safari/filters.json"
+}
