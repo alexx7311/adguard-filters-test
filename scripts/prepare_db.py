@@ -3,9 +3,10 @@
 Prepare AG Mini database for filter update test cases.
 
 Usage:
-  python3 prepare_db.py tc10090 --source <db_path>
-  python3 prepare_db.py tc10091 --source <backup_path>
-  python3 prepare_db.py tc10277 --source <backup_path>
+  python3 prepare_db.py tc10090                          # uses AG Mini DB as source
+  python3 prepare_db.py tc10090 --install                # prepare + replace AG Mini DB
+  python3 prepare_db.py tc10091 --source <backup_path>   # use specific source
+  python3 prepare_db.py tc10091 --source <backup> --install
 
 TC 10090: Sets up for diff update (next_check_time in past)
 TC 10091: Sets up for full update (next_check_time in future, blocking diff)
@@ -32,6 +33,14 @@ FIRST_PATCH_RELATIVE = "../patches/2_optimized/2_optimized-s-1700003600-3600.pat
 # Path to the base filter content (v1.0.0) relative to this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_FILTER_PATH = os.path.join(SCRIPT_DIR, "..", "base", "2_optimized_v1.0.0.txt")
+
+# AG Mini database path
+AG_MINI_DB_DIR = os.path.expanduser(
+    "~/Library/Group Containers/TC3Q7MAJXF.com.adguard.mac"
+    "/Library/Application Support/com.adguard.safari.AdGuard/Filters"
+)
+AG_MINI_DB_PATH = os.path.join(AG_MINI_DB_DIR, "agflm_standard.db")
+
 
 
 def compute_filter_checksum(content: str) -> str:
@@ -250,24 +259,49 @@ def prepare_tc10277(source_db: str):
     return output_db
 
 
+def install_db(prepared_db: str):
+    """Replace AG Mini database with the prepared one."""
+    if not os.path.isdir(AG_MINI_DB_DIR):
+        print(f"Error: AG Mini Filters directory not found: {AG_MINI_DB_DIR}", file=sys.stderr)
+        print("Is AdGuard for Safari installed?", file=sys.stderr)
+        sys.exit(1)
+
+    if os.path.exists(AG_MINI_DB_PATH):
+        backup = AG_MINI_DB_PATH + f".bak.{int(time.time())}"
+        shutil.copy2(AG_MINI_DB_PATH, backup)
+        print(f"Backed up existing DB -> {backup}")
+
+    shutil.copy2(prepared_db, AG_MINI_DB_PATH)
+    print(f"Installed: {prepared_db} -> {AG_MINI_DB_PATH}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Prepare AG Mini DB for filter update tests")
     parser.add_argument("tc", choices=["tc10090", "tc10091", "tc10277"],
                         help="Test case to prepare for")
-    parser.add_argument("--source", required=True,
-                        help="Path to source DB (original for tc10090, backup for tc10091/tc10277)")
+    parser.add_argument("--source",
+                        help="Path to source DB (default: AG Mini DB path)")
+    parser.add_argument("--install", action="store_true",
+                        help="Replace AG Mini DB with the prepared one")
     args = parser.parse_args()
 
-    if not os.path.exists(args.source):
-        print(f"Error: source DB not found: {args.source}", file=sys.stderr)
+    source = args.source or AG_MINI_DB_PATH
+    if not os.path.exists(source):
+        print(f"Error: source DB not found: {source}", file=sys.stderr)
+        if not args.source:
+            print(f"AG Mini DB not at default path. Use --source to specify.", file=sys.stderr)
         sys.exit(1)
 
     if args.tc == "tc10090":
-        prepare_tc10090(args.source)
+        result = prepare_tc10090(source)
+        output_db = result[0]  # (output_db, backup_db)
     elif args.tc == "tc10091":
-        prepare_tc10091(args.source)
+        output_db = prepare_tc10091(source)
     elif args.tc == "tc10277":
-        prepare_tc10277(args.source)
+        output_db = prepare_tc10277(source)
+
+    if args.install:
+        install_db(output_db)
 
 
 if __name__ == "__main__":
