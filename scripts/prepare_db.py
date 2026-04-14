@@ -181,20 +181,35 @@ def prepare_tc10091(source_db: str):
     shutil.copy2(source_db, output_db)
     print(f"Copied {source_db} -> {output_db}")
 
+    six_days_ago = now - 6 * 86400
+
     conn = sqlite3.connect(output_db)
     try:
+        # Set last_download_time to 6 days ago so filter is expired (expires=432000=5 days)
+        # This ensures full update triggers even if ignore_filters_expiration=false
+        conn.execute("""
+            UPDATE filter SET last_download_time = ?
+            WHERE filter_id = ?
+        """, (six_days_ago, FILTER_ID))
+
         conn.execute("""
             UPDATE diff_updates SET next_check_time = ?
             WHERE filter_id = ?
         """, (one_day_future, FILTER_ID))
         conn.commit()
 
+        row = conn.execute(
+            "SELECT last_download_time FROM filter WHERE filter_id = ?",
+            (FILTER_ID,)
+        ).fetchone()
         du = conn.execute(
             "SELECT next_path, next_check_time FROM diff_updates WHERE filter_id = ?",
             (FILTER_ID,)
         ).fetchone()
 
         print(f"\n=== TC 10091 DB Summary ===")
+        print(f"filter.last_download_time:   {row[0]} ({datetime.fromtimestamp(row[0], tz=timezone.utc).isoformat()})")
+        print(f"  (6 days ago: filter is expired, ensures full update)")
         print(f"diff_updates.next_path:      {du[0]}")
         print(f"diff_updates.next_check_time: {du[1]} ({datetime.fromtimestamp(du[1], tz=timezone.utc).isoformat()})")
         print(f"  (in future: diff update blocked -> full update will be used)")
