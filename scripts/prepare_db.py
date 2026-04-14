@@ -111,7 +111,7 @@ def prepare_tc10090(source_db: str):
                 checksum = ?,
                 last_download_time = ?,
                 is_installed = 1,
-                is_enabled = 1,
+                is_enabled = 0,
                 download_url = ?,
                 subscription_url = ?
             WHERE filter_id = ?
