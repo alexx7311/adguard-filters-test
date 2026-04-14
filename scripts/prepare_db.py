@@ -188,8 +188,10 @@ def prepare_tc10091(source_db: str):
     try:
         # Set last_download_time to 6 days ago so filter is expired (expires=432000=5 days)
         # This ensures full update triggers even if ignore_filters_expiration=false
+        # Also set is_enabled=1 — filter must already be enabled for timer-based full update.
+        # (If is_enabled=0, enabling it triggers an immediate download, not a timer-based one.)
         conn.execute("""
-            UPDATE filter SET last_download_time = ?
+            UPDATE filter SET last_download_time = ?, is_enabled = 1
             WHERE filter_id = ?
         """, (six_days_ago, FILTER_ID))
 
