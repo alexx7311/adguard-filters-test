@@ -1,0 +1,11 @@
+diff checksum:40b31fdbc095095356aade01e9563b75b73e75ec lines:68
+d1 2
+a2 2
+! Checksum: iFdsyz7wX+t+55lfDLJpIg
+! Diff-Path: ../patches/2_optimized/2_optimized-s-1700151200-3600.patch
+d5 2
+a6 2
+! Version: 1.0.41
+! TimeUpdated: 2023-11-16T15:13:20+00:00
+a67 1
+||testdomain061.example^
