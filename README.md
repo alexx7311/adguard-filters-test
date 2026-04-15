@@ -25,6 +25,8 @@ scripts/
   prepare_db.py                             # Подготовка БД для каждого TC
   install_devconfig.sh                      # Установка devConfig (macOS, требует sudo)
   verify_db.py                              # Просмотр состояния БД после теста
+  remove_devconfig.sh                       # Удаление devConfig (возврат к дефолтным настройкам)
+  remove_db.sh                              # Удаление БД (AG Mini пересоздаст при запуске)
 ```
 
 ## Требования
@@ -175,3 +177,19 @@ python3 scripts/verify_db.py [path_to_db]
 ```
 
 Читает БД в режиме read-only, показывает состояние фильтра ID 2: версию, `rules_count`, `last_download_time`, `diff_updates`.
+
+### remove_devconfig.sh
+
+```
+./scripts/remove_devconfig.sh
+```
+
+Удаляет devConfig (требует sudo). AG Mini вернётся к дефолтным настройкам при перезапуске.
+
+### remove_db.sh
+
+```
+./scripts/remove_db.sh
+```
+
+Удаляет БД фильтров AG Mini. Приложение пересоздаст её автоматически при следующем запуске.
