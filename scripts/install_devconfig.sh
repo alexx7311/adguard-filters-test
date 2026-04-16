@@ -6,6 +6,7 @@
 set -euo pipefail
 
 DEVCONFIG_TARGET="/Library/Application Support/AdGuard Software/com.adguard.safari.AdGuard/devConfig.json"
+DEVCONFIG_TARGET_DIR="$(dirname "$DEVCONFIG_TARGET")"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEVCONFIG_DIR="$SCRIPT_DIR/../devconfig"
 
@@ -33,6 +34,12 @@ echo ""
 echo "Content:"
 cat "$SOURCE"
 echo ""
+
+# Create target directory if it doesn't exist
+if [[ ! -d "$DEVCONFIG_TARGET_DIR" ]]; then
+    echo "Creating directory: $DEVCONFIG_TARGET_DIR"
+    sudo mkdir -p "$DEVCONFIG_TARGET_DIR"
+fi
 
 # Copy and set permissions (requires sudo)
 sudo cp "$SOURCE" "$DEVCONFIG_TARGET"
